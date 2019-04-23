@@ -1,4 +1,5 @@
 import json
+import math
 from collections import defaultdict
 
 import tensorflow as tf
@@ -242,14 +243,18 @@ def process_ctx_ans_for_bert(ctx_raw, ans_raw, tokenizer, counter, endingonly, m
 
     len_total = len(context[0]) + len(answer[0]) + 3
     if len_total > max_seq_length:
-        take_away_from_ctx = min((len_total - max_seq_length + 1) // 2, max(len(context) - 32, 0))
-        take_away_from_answer = len_total - max_seq_length + take_away_from_ctx
+        take_away_total = len_total + 3 - max_seq_length
+
+        # Remove words in the respective ratios of context and answer lengths
+        take_away_from_ctx = math.ceil(len(context[0])/len_total * take_away_total)
+        take_away_from_answer = math.ceil(len(answer[0])/len_total * take_away_total)
+
         context = (context[0][take_away_from_ctx:],
                    context[1][take_away_from_ctx:])
         answer = (answer[0][take_away_from_answer:],
                   answer[1][take_away_from_answer:])
 
-        print("FOR Q{} A {}\nLTotal was {} so take away {} from ctx and {} from answer".format(
+        print("FOR Q:\n\t{}\nFor A:\n\t{}\nTotal was {} so take away {} from ctx and {} from answer".format(
             ' '.join(context[0]), ' '.join(answer[0]), len_total, take_away_from_ctx,
             take_away_from_answer), flush=True)
     assert len(context[0]) + len(answer[0]) + 3 <= max_seq_length
